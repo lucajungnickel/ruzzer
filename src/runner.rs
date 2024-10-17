@@ -1,5 +1,8 @@
+use core::str;
 use std::process::Command;
 
+#[derive(Debug)]
+#[allow(dead_code)]
 pub enum State {
     Fail,
     Pass,
@@ -17,7 +20,7 @@ pub trait RunnableProgram {
 
 pub struct RunnerResult {
     /* Result of the fuzzing run */
-    state: State,
+    pub state: State,
 }
 
 
@@ -52,6 +55,26 @@ pub struct RunnerProgramResult {
     output_stderr: Vec<u8>,
 }
 
+pub fn print_runner_result(result: RunnerResult) {
+    println!("State: {:?}", result.state);
+}
+
+pub fn print_runner_program_result(result: RunnerProgramResult) {
+    print_runner_result(result.result);
+    println!("Return code: {}", result.return_code);
+    println!("Stdout: {:?}",result.output_stdout);
+    println!("Stderr: {:?}",result.output_stderr);
+    println!("Len stdout: {}", result.output_stdout.len());
+    println!("Len stderr: {}", result.output_stderr.len());
+}
+
+
+fn evaluate_return_code(return_code: u8) -> State {
+    match return_code {
+        0 => State::Pass,
+        _ => State::Fail,
+    }
+}
 pub struct RunnerProgram {
     program_name: String,
 }
@@ -65,10 +88,12 @@ impl RunnableProgram for RunnerProgram {
         //handle run program:
         match output_res {
             Ok(value) => {
+                let s = str::from_utf8(&value.stdout).unwrap();
+                println!("{}", s);
                 let return_code = value.status.code().unwrap() as u8;
                 RunnerProgramResult {
                     result: RunnerResult { 
-                        state: State::Pass,
+                        state: evaluate_return_code(return_code),
                      },
                     output_stdout: value.stdout,
                     output_stderr: value.stderr,
@@ -98,3 +123,4 @@ impl RunnerProgram {
         }
     }
 }
+

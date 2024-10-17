@@ -6,7 +6,8 @@ int main(int argc, char *argv[]) {
         printf("Call: crashy <argument>\n");
         return 0;
     }
-
+    printf("Hello\n");
+    return -1;
     int len = strlen(argv[1]);
     if (len > 10) {
         printf("Input is too long!\n");
