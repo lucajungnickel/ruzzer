@@ -1,12 +1,13 @@
-use crate::{runner::{Runnable, RunnableProgram, RunnerProgramResult, RunnerResult}, seeder::Seedable};
-use crate::logger::Logger;
+use crate::{logger::{log_crash, log_internal_error}, runner::{RunnableProgram, RunnerProgramResult, RunnerResult}, seeder::Seedable};
 
 
 /**
  * A fuzzer uses a runner and fuzzes the given input.
  */
 
-const PRINT_STATUS_EVERY_RUN: u32 = 1000;
+const PRINT_STATUS_EVERY_RUN: u32 = 100;
+
+#[allow(unused)]
  pub struct FuzzerProgram<R: RunnableProgram, S: Seedable> {
     pub runnable_instance: R,
     pub seedable_instance: S,
@@ -32,10 +33,10 @@ impl<R: RunnableProgram, T: Seedable> FuzzerProgram<R, T> {
             let result = self.run_one_time();
             match result.result.state {
                 crate::runner::State::Fail => {
-                    Logger::log_crash(&result);
+                    log_crash(&result);
                 },
                 crate::runner::State::InternalError => {
-                    Logger::log_internal_error(&result);
+                    log_internal_error(&result);
                 }
                 _ => {
                 }
@@ -48,12 +49,14 @@ impl<R: RunnableProgram, T: Seedable> FuzzerProgram<R, T> {
         }
     }
 
+
+    #[allow(unused)]
     pub fn run_until_error(&mut self) {
         loop {
             let result = self.run_one_time();
             match result.result.state {
                 crate::runner::State::Fail => {
-                    Logger::log_crash(&result);
+                    log_crash(&result);
                     break;
                 },
                 _ => {
@@ -65,8 +68,11 @@ impl<R: RunnableProgram, T: Seedable> FuzzerProgram<R, T> {
 
     pub fn run_one_time(&mut self) -> RunnerProgramResult {
         //generate seed
-        let seed = self.seedable_instance.next_seed();
+        let mut seed = self.seedable_instance.next_seed();
         //println!("Seed: {:?}", String::from_utf8_lossy(&seed));
+
+        //sanitize seed to make it SUT ready
+        self.runnable_instance.sanitize_seed(&mut seed);
 
         //feed it to the runner
         let result = self.runnable_instance.run(&seed);
@@ -87,18 +93,18 @@ impl<R: RunnableProgram, T: Seedable> FuzzerProgram<R, T> {
     }
 
     pub fn print_results(&self) {
-        Logger::log_info("--------------------------REPORT--------------------------");
+        println!("--------------------------REPORT--------------------------");
         println!("Total runs: {}", self.count_run);
         println!("Number crashes: {}", self.crash.len());
         
         if self.crash.len() != 0 {
-            Logger::log_info("Crashes:");
+            println!("Crashes:");
             for result in &self.crash {
                 println!("  State: {:?}, Seed: {:?}", result.state, result.seed);
             }
         }
         if self.unknown_crash_status.len() != 0 {
-            Logger::log_warning("Unknown Crash Statuses:");
+            println!("Unknown Crash Statuses:");
             for result in &self.unknown_crash_status {
                 println!("  State: {:?}, Seed: {:?}", result.state, result.seed);
             }

@@ -6,12 +6,14 @@ use crate::grammar::{generate, Grammar, GRAMMAR_ENTRY};
  * This is the maximum length of a generated seed in the configuration
  * of a RandomSeeder::init_random() or RandomSeeder::init(). 
  */
+#[allow(unused)]
 const MAX_RANDOM_SEEDER_LENGTH: u64 = 4096;
 
 pub trait Seedable {
     fn next_seed(&mut self) -> Vec<u8>;
 }
 
+#[allow(unused)]
 pub struct RandomSeeder<T: Rng> {
     initial_seed: u64,
     rng_generator: T,
@@ -19,6 +21,7 @@ pub struct RandomSeeder<T: Rng> {
     max_length: u64,
 }
 
+#[allow(unused)]
 impl<T: Rng> RandomSeeder<T> {
     pub fn init_random() -> RandomSeeder<ThreadRng> {
         let mut rng_generator = rand::thread_rng();

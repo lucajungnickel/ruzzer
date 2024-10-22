@@ -4,21 +4,30 @@ mod grammar;
 mod fuzzer;
 mod logger;
 
-use std::sync::{Arc, Mutex};
-use std::thread;
-use std::time::Duration;
 
+use clap::Parser;
 use fuzzer::FuzzerProgram;
-use grammar::{create_cgi_grammar, Grammar};
+use grammar::create_cgi_grammar;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
-use runner::{print_runner_program_result, RunnableProgram, RunnerPrinter, RunnerProgram};
+use runner::RunnerProgram;
 use seeder::{GrammarSeeder, MutationSeedModifier};
 
+#[derive(Parser)]
+struct Cli {
+    /// Set the logging level (trace, debug, info, warn, error)
+    #[arg(short, long, default_value = "info")]
+    log_level: String,
+}
+
+
 fn main() {
-    //thread::sleep(Duration::new(1, 0));
-    let runner_program: RunnerProgram = RunnerProgram::init("./SUTs/CGI_crashy_asan");
+
+    let cli = Cli::parse();
+    std::env::set_var("RUST_LOG", cli.log_level);
+    env_logger::init();
     
+    let runner_program: RunnerProgram = RunnerProgram::init("./SUTs/CGI_crashy_asan");
     let rng = StdRng::from_entropy();
     let grammar_cgi = create_cgi_grammar();
     let grammar_seeder = GrammarSeeder::init(grammar_cgi, rng);

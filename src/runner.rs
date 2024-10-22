@@ -10,11 +10,17 @@ pub enum State {
     InternalError,
 }
 
+#[allow(unused)]
 pub trait Runnable {
     fn run(&self, seed: &Vec<u8>) -> RunnerResult;
 }
 
 pub trait RunnableProgram {
+    /*
+     * (Maybe) sanitizes the given seed, depending on the given SUT.
+     * For example, nul bytes are removed if they are not allowed by the SUT setup. 
+     */
+    fn sanitize_seed(&self, seed: &mut Vec<u8>);
     fn run(&self, seed: &Vec<u8>) -> RunnerProgramResult;
 }
 
@@ -29,6 +35,7 @@ pub struct RunnerResult {
 pub struct RunnerPrinter;
 
 impl RunnerPrinter {
+    #[allow(unused)]
     pub fn init() -> RunnerPrinter {
         RunnerPrinter {
 
@@ -59,10 +66,12 @@ pub struct RunnerProgramResult {
     pub output_stderr: Vec<u8>,
 }
 
+#[allow(unused)]
 pub fn print_runner_result(result: RunnerResult) {
     println!("State: {:?}", result.state);
 }
 
+#[allow(unused)]
 pub fn print_runner_program_result(result: RunnerProgramResult) {
     print_runner_result(result.result);
     println!("Return code: {}", result.return_code);
@@ -83,6 +92,11 @@ pub struct RunnerProgram {
 }
 
 impl RunnableProgram for RunnerProgram {
+
+    fn sanitize_seed(&self, seed: &mut Vec<u8>) {
+        seed.retain(|&byte| byte != 0);    
+    }
+
     fn run(&self, seed: &Vec<u8>) -> RunnerProgramResult {
         let arg: String = seed.iter()
         .filter_map(|&b| if b.is_ascii() { Some(b as char) } else { None })

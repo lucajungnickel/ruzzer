@@ -3,7 +3,6 @@ use rand::Rng;
 use std::collections::HashMap;
 use std::u8;
 
-use crate::seeder::Seedable;
 
 pub const GRAMMAR_ENTRY: &str = "Start";
 
@@ -61,6 +60,7 @@ pub fn create_cgi_grammar() -> Grammar {
     grammar
 }
 
+#[allow(unused)]
 pub fn create_grammar_calculation() -> Grammar {
     let mut grammar = HashMap::new();
     grammar.insert(GRAMMAR_ENTRY.to_string(), vec![
@@ -155,10 +155,10 @@ pub fn generate(grammar: &Grammar, symbol: &str, rng: &mut impl Rng) -> String {
 }
 
 mod tests {
+    #[allow(unused_imports)]
     use crate::grammar::generate;
-    use super::{create_grammar_calculation, create_cgi_grammar};
-
-    
+    #[allow(unused_imports)]
+    use super::{create_cgi_grammar, create_grammar_calculation};    
 
     #[test]
     fn test_grammar_calculation() {

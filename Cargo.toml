@@ -7,4 +7,6 @@ edition = "2021"
 rand = "0.8"
 nom = "7"
 colored = "2.0"
-ctrlc = "3.2"
+clap = { version = "4.0", features = ["derive"] }
+log = "0.4"
+env_logger = "0.10"
