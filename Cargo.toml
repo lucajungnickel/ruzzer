@@ -5,3 +5,6 @@ edition = "2021"
 
 [dependencies]
 rand = "0.8"
+nom = "7"
+colored = "2.0"
+ctrlc = "3.2"

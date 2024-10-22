@@ -1,7 +1,7 @@
 use core::str;
 use std::process::Command;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 #[allow(dead_code)]
 pub enum State {
     Fail,
@@ -11,16 +11,18 @@ pub enum State {
 }
 
 pub trait Runnable {
-    fn run(&self, seed: &str) -> RunnerResult;
+    fn run(&self, seed: &Vec<u8>) -> RunnerResult;
 }
 
 pub trait RunnableProgram {
-    fn run(&self, seed: &str) -> RunnerProgramResult;
+    fn run(&self, seed: &Vec<u8>) -> RunnerProgramResult;
 }
 
+#[derive(Debug, Clone)]
 pub struct RunnerResult {
     /* Result of the fuzzing run */
     pub state: State,
+    pub seed: Vec<u8>,
 }
 
 
@@ -35,24 +37,26 @@ impl RunnerPrinter {
 }
 
 impl Runnable for RunnerPrinter {
-    fn run(&self, seed: &str) -> RunnerResult {
-        println!("{}", seed);
-        RunnerResult { state: (State::Pass) }
+    fn run(&self, seed: &Vec<u8>) -> RunnerResult {
+        println!("{}", String::from_utf8_lossy(seed));
+        RunnerResult { 
+            state: (State::Pass),
+            seed: seed.clone() }
     }
 }
 
 
 pub struct RunnerProgramResult {
-    result: RunnerResult,
+    pub result: RunnerResult,
     /*
      * Defines the return_code of a run program.
      * Only valid if result != RunnerResult.Unresolved
      * 256 posix return codes posible 
      * https://www.gnu.org/savannah-checkouts/gnu/libc/manual/html_node/Exit-Status.html
      */
-    return_code: u8,
-    output_stdout: Vec<u8>,
-    output_stderr: Vec<u8>,
+    pub return_code: u8,
+    pub output_stdout: Vec<u8>,
+    pub output_stderr: Vec<u8>,
 }
 
 pub fn print_runner_result(result: RunnerResult) {
@@ -64,10 +68,9 @@ pub fn print_runner_program_result(result: RunnerProgramResult) {
     println!("Return code: {}", result.return_code);
     println!("Stdout: {:?}",result.output_stdout);
     println!("Stderr: {:?}",result.output_stderr);
-    println!("Len stdout: {}", result.output_stdout.len());
-    println!("Len stderr: {}", result.output_stderr.len());
+    println!("Stdout Ascii: {:?}", String::from_utf8_lossy(&result.output_stdout));
+    println!("Stderr Ascii: {:?}", String::from_utf8_lossy(&result.output_stderr));
 }
-
 
 fn evaluate_return_code(return_code: u8) -> State {
     match return_code {
@@ -80,20 +83,23 @@ pub struct RunnerProgram {
 }
 
 impl RunnableProgram for RunnerProgram {
-    fn run(&self, seed: &str) -> RunnerProgramResult {
+    fn run(&self, seed: &Vec<u8>) -> RunnerProgramResult {
+        let arg: String = seed.iter()
+        .filter_map(|&b| if b.is_ascii() { Some(b as char) } else { None })
+        .collect();
+
         let output_res = Command::new(self.program_name.clone())
-        .arg(seed)
+        .arg(&arg)
         .output();
         
         //handle run program:
         match output_res {
             Ok(value) => {
-                let s = str::from_utf8(&value.stdout).unwrap();
-                println!("{}", s);
                 let return_code = value.status.code().unwrap() as u8;
                 RunnerProgramResult {
                     result: RunnerResult { 
                         state: evaluate_return_code(return_code),
+                        seed: seed.clone()
                      },
                     output_stdout: value.stdout,
                     output_stderr: value.stderr,
@@ -103,7 +109,10 @@ impl RunnableProgram for RunnerProgram {
             Err(e) => {
                 eprint!("Error executing running of program: {}", e);
                 RunnerProgramResult {
-                    result: RunnerResult { state: State::InternalError },
+                    result: RunnerResult { 
+                        state: State::InternalError,
+                        seed: seed.clone()
+                    },
                     output_stdout: Vec::new(),
                     output_stderr: Vec::new(),
                     return_code: 0,

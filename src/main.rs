@@ -1,25 +1,40 @@
 mod runner;
 mod seeder;
+mod grammar;
+mod fuzzer;
+mod logger;
 
-use std::time::Duration;
+use std::sync::{Arc, Mutex};
 use std::thread;
+use std::time::Duration;
+
+use fuzzer::FuzzerProgram;
+use grammar::{create_cgi_grammar, Grammar};
+use rand::rngs::StdRng;
+use rand::SeedableRng;
 use runner::{print_runner_program_result, RunnableProgram, RunnerPrinter, RunnerProgram};
+use seeder::{GrammarSeeder, MutationSeedModifier};
 
 fn main() {
-    println!("Hello, world!");
+    //thread::sleep(Duration::new(1, 0));
+    let runner_program: RunnerProgram = RunnerProgram::init("./SUTs/CGI_crashy_asan");
+    
+    let rng = StdRng::from_entropy();
+    let grammar_cgi = create_cgi_grammar();
+    let grammar_seeder = GrammarSeeder::init(grammar_cgi, rng);
+    let mutation_grammar_seeder = MutationSeedModifier::init(grammar_seeder);
 
+    //let mut fuzzer = FuzzerProgram::init(runner_program, grammar_seeder);
+    let mut fuzzer = FuzzerProgram::init(runner_program, mutation_grammar_seeder);
+    
+    fuzzer.run_forever();
 
-    thread::sleep(Duration::new(1, 0));
-    let runner_program: RunnerProgram = RunnerProgram::init("./crashy");
-    let result = runner_program.run("seed");
-    print_runner_program_result(result);
 }
 
-// Test module
 #[cfg(test)]
 mod tests {
     use rand::rngs::{StdRng, ThreadRng};
-    use runner::{Runnable, RunnerResult, State};
+    use runner::{Runnable, RunnerPrinter, RunnerResult, State};
     use seeder::{RandomSeeder, Seedable};
 
     use super::*;
@@ -27,7 +42,7 @@ mod tests {
     #[test]
     fn test_runner_printer() {
         let runner_printer: RunnerPrinter = RunnerPrinter::init();
-        let res: RunnerResult = runner_printer.run("test_seed");
+        let res: RunnerResult = runner_printer.run(&"test_seed".as_bytes().to_vec());
         matches!(res.state, State::Pass);
     }
 
@@ -52,4 +67,5 @@ mod tests {
         assert_ne!(seed2, seed3);
     }
 
+    
 }
