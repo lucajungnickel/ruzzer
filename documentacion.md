@@ -31,6 +31,12 @@ MutationSeeder()
 GrammarSeeder()
     seed()
 
+Grammar()
+    context-free grammar
+    start symbol
+    set of expansion rules ( also called rules)
+    
+
 
 
 Runner()

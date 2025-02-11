@@ -1,6 +1,11 @@
 [package]
-name = "proyecto1"
+name = "ruzzer"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+rand = "0.8"
+colored = "2.0"
+clap = { version = "4.0", features = ["derive"] }
+log = "0.4"
+env_logger = "0.10"
